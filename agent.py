@@ -41,29 +41,35 @@ def upload_video(file_path: str, session_id: str) -> str:
 
 
 @tool
+def list_mcp_tools() -> str:
+    """List all available MCP tools"""
+    try:
+        tools = mcp_client.list_tools()
+        if not tools:
+            return "No MCP tools available"
+
+        result = ["Available MCP Tools:\n"]
+        for t in tools:
+            result.append(f"• {t['name']}: {t['description']}")
+
+        return "\n".join(result)
+    except Exception as e:
+        return f"Error: {e}"
+
+
+@tool
 def call_mcp_tool(tool_name: str, arguments: str = "{}") -> str:
     """
     Call an MCP tool with the given arguments.
 
     Args:
-        tool_name: Name of the MCP tool to call (e.g., "create_session", "list_tools")
+        tool_name: Name of the MCP tool to call
         arguments: JSON string with tool arguments (e.g., '{"param": "value"}')
 
     Returns:
         Result from the MCP tool
     """
     try:
-        # List all tools
-        if tool_name == "list_tools":
-            tools = mcp_client.list_tools()
-            if not tools:
-                return "No MCP tools available"
-
-            result = ["Available MCP Tools:\n"]
-            for t in tools:
-                result.append(f"• {t['name']}: {t['description']}")
-            return "\n".join(result)
-
         # Parse arguments
         args = json.loads(arguments) if arguments else {}
 
@@ -93,16 +99,7 @@ llm = ChatOpenAI(
 )
 
 # Create agent with all tools
-tools = [upload_video, call_mcp_tool]
-
-# Get dynamic MCP tools list for system prompt
-mcp_tools_list = mcp_client.list_tools()
-if mcp_tools_list:
-    tools_description = "\n".join(
-        [f"- {t['name']}: {t['description']}" for t in mcp_tools_list]
-    )
-else:
-    tools_description = "No MCP tools available (server offline)"
+tools = [upload_video, list_mcp_tools, call_mcp_tool]
 
 agent = create_tool_calling_agent(
     llm,
@@ -111,17 +108,22 @@ agent = create_tool_calling_agent(
         [
             (
                 "system",
-                f"""You are a Blender video editing assistant. You can:
-1. Upload videos: upload_video("path/to/video.mp4", "session_id")
-2. Use MCP tools: call_mcp_tool("tool_name", '{{"arg": "value"}}')
+                """You are a Blender video editing assistant. You can help users:
+1. Upload video files using upload_video tool
+2. List available MCP tools using list_mcp_tools
+3. Execute MCP tools using call_mcp_tool
 
-Available MCP tools:
-{tools_description}
+Workflow:
+- Create session: call_mcp_tool("create_session", "{{}}")
+- Upload video: upload_video("path/to/video.mp4", "session_id")
+- Create project: call_mcp_tool("create_python_project", '{{"sessionId": "xxx", "fps": 30}}')
+- Add videos: call_mcp_tool("add_video_filenames_to_script", '{{"sessionId": "xxx", "videoFilenames": ["video.mp4"]}}')
+- Render: call_mcp_tool("run_blender_rendering_script", '{{"sessionId": "xxx"}}')
 
-Always provide arguments as JSON string.""",
+Always provide arguments as a JSON string for MCP tools.""",
             ),
-            ("human", "{{input}}"),
-            ("placeholder", "{{agent_scratchpad}}"),
+            ("human", "{input}"),
+            ("placeholder", "{agent_scratchpad}"),
         ]
     ),
 )
@@ -149,7 +151,7 @@ if __name__ == "__main__":
             user_input = input("You: ").strip()
 
             if user_input.lower() in ["exit", "quit", "q"]:
-                print("\nGoodbye!")
+                print("\n Goodbye!")
                 break
 
             if not user_input:
@@ -159,7 +161,7 @@ if __name__ == "__main__":
             print(f"\nAgent: {result['output']}\n")
 
         except KeyboardInterrupt:
-            print("\n\nGoodbye!")
+            print("\n\n Goodbye!")
             break
         except Exception as e:
-            print(f"\nError: {e}\n")
+            print(f"\n Error: {e}\n")
