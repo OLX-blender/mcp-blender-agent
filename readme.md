@@ -19,9 +19,10 @@ UPLOAD_SERVER_URL=http://...    # Upload server address (default localhost:8080)
 ## Usage example
 
 ```
-You: create a new session
-You: list available tools
-You: create python project for session <id> with 30 fps
+Stwórz proszę nową sesję, zapamiętaj ją. 
+Dla tej sesji prześlij filmik videos/test.mp4. Następnie w ramach tej samej sesji utwórz projekt python.
+Po utworzeniu projektu python dodaj do niego ścieżkę do filmiku test.mp4.
+Na koniec zrenderuj całość.
 ```
 
 ## Stop

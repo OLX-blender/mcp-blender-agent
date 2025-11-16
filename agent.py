@@ -70,13 +70,9 @@ def call_mcp_tool(tool_name: str, arguments: str = "{}") -> str:
         Result from the MCP tool
     """
     try:
-        # Parse arguments
         args = json.loads(arguments) if arguments else {}
-
-        # Call the tool
         result = mcp_client.call_tool(tool_name, args)
 
-        # Extract text from content array (MCP standard response format)
         if isinstance(result, dict) and "content" in result:
             texts = [
                 c.get("text", "") for c in result["content"] if c.get("type") == "text"
@@ -101,27 +97,31 @@ llm = ChatOpenAI(
 # Create agent with all tools
 tools = [upload_video, list_mcp_tools, call_mcp_tool]
 
+# Get dynamic MCP tools list for system prompt
+mcp_tools_list = mcp_client.list_tools()
+if mcp_tools_list:
+    tools_description = "\n".join(
+        [f"- {t['name']}: {t['description']}" for t in mcp_tools_list]
+    )
+else:
+    tools_description = "No MCP tools available (server offline)"
+
+system_prompt = f"""You are a Blender video editing assistant. You can:
+1. Upload video files using upload_video tool
+2. List available MCP tools using list_mcp_tools
+3. Execute MCP tools using call_mcp_tool
+
+Available MCP tools:
+{tools_description}
+
+Always provide arguments as a valid JSON string for MCP tools."""
+
 agent = create_tool_calling_agent(
     llm,
     tools,
     ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                """You are a Blender video editing assistant. You can help users:
-1. Upload video files using upload_video tool
-2. List available MCP tools using list_mcp_tools
-3. Execute MCP tools using call_mcp_tool
-
-Workflow:
-- Create session: call_mcp_tool("create_session", "{{}}")
-- Upload video: upload_video("path/to/video.mp4", "session_id")
-- Create project: call_mcp_tool("create_python_project", '{{"sessionId": "xxx", "fps": 30}}')
-- Add videos: call_mcp_tool("add_video_filenames_to_script", '{{"sessionId": "xxx", "videoFilenames": ["video.mp4"]}}')
-- Render: call_mcp_tool("run_blender_rendering_script", '{{"sessionId": "xxx"}}')
-
-Always provide arguments as a JSON string for MCP tools.""",
-            ),
+            ("system", system_prompt),
             ("human", "{input}"),
             ("placeholder", "{agent_scratchpad}"),
         ]
@@ -131,27 +131,28 @@ Always provide arguments as a JSON string for MCP tools.""",
 executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
 
 if __name__ == "__main__":
-    print("MCP Blender Agent")
     print(f"MCP Server: {MCP_SERVER_URL}")
     print(f"Upload Server: {UPLOAD_SERVER_URL}")
+    print(f"Model: {MODEL_NAME}")
 
-    # Connect to MCP server
     print("\nConnecting to MCP server...")
     startup_tools = mcp_client.list_tools()
     if startup_tools:
         print(f"Connected! Found {len(startup_tools)} tools")
+        print("\nAvailable MCP tools:")
+        for mcp_tool in startup_tools:
+            print(f" {mcp_tool['name']}: {mcp_tool['description']}")
     else:
         print("MCP server not available")
 
     print("\nType 'exit' or 'quit' to stop")
 
-    # Main loop
     while True:
         try:
             user_input = input("You: ").strip()
 
             if user_input.lower() in ["exit", "quit", "q"]:
-                print("\n Goodbye!")
+                print("\nGoodbye!")
                 break
 
             if not user_input:
@@ -161,7 +162,7 @@ if __name__ == "__main__":
             print(f"\nAgent: {result['output']}\n")
 
         except KeyboardInterrupt:
-            print("\n\n Goodbye!")
+            print("\n\nGoodbye!")
             break
         except Exception as e:
-            print(f"\n Error: {e}\n")
+            print(f"\nError: {e}\n")
