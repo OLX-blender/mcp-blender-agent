@@ -8,21 +8,20 @@ docker build -t mcp-blender-agent .
 docker run -it --rm --env-file .env mcp-blender-agent
 ```
 
-## Required variables (has backup in code - not required to set)
+## Required variables
 
 ```bash
 OPENAI_API_KEY=sk-...           # Your API key
-MCP_SERVER_URL=http://...       # MCP server address (default localhost:3000)
-UPLOAD_SERVER_URL=http://...    # Upload server address (default localhost:8080)
+MODEL_NAM=...
+OPENAI_API_BASE=https://...
+OPTIONAL MCP_SERVER_URL=http://...
+OPTIONAL UPLOAD_SERVER_URL=http://...
 ```
 
 ## Usage example
 
 ```
-Stwórz proszę nową sesję, zapamiętaj ją. 
-Dla tej sesji prześlij filmik videos/test.mp4. Następnie w ramach tej samej sesji utwórz projekt python.
-Po utworzeniu projektu python dodaj do niego ścieżkę do filmiku test.mp4.
-Na koniec zrenderuj całość.
+Stwórz proszę nową sesję, zapamiętaj ją. Dla tej sesji prześlij filmik videos/test.mp4. Następnie w ramach tej samej sesji utwórz projekt python. Po utworzeniu projektu python dodaj do niego ścieżkę do filmiku test.mp4. Na koniec zrenderuj całość.
 ```
 
 ## Stop
