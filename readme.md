@@ -26,5 +26,5 @@ Stwórz proszę nową sesję, zapamiętaj ją. Dla tej sesji prześlij filmik vi
 
 ## Stop
 ```bash
-docker stop mcp-agent
+exit
 ```
